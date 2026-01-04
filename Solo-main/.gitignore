@@ -1,0 +1,35 @@
+# Node dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Coverage reports
+coverage/
+
+# Local environment variables (do not commit secrets)
+.env*
+.env.local
+!.env.example
+
+# Vercel deployment directory
+.vercel/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.idea/
+.vscode/
+
+# Windows download metadata
+*Zone.Identifier*
+*:Zone.Identifier
+*_Zone.Identifier
