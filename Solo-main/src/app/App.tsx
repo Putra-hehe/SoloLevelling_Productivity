@@ -1,4 +1,5 @@
 import { SpeedInsights } from "@vercel/speed-insights/react";
+import { createId } from "./utils/id";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Toaster, toast } from "sonner";
@@ -299,7 +300,7 @@ export default function App() {
   const handleAddQuestAI = () => {
     const template = getRandomQuestTemplate();
     const newQuest: Quest = {
-      id: crypto.randomUUID(),
+      id: createId("quest"),
       title: template.title,
       description: template.description,
       difficulty: template.difficulty,
@@ -377,7 +378,7 @@ export default function App() {
   // Habit Handlers
   const handleAddHabit = () => {
     const newHabit: Habit = {
-      id: crypto.randomUUID(),
+      id: createId("habit"),
       title: "New Habit",
       frequency: "daily",
       currentStreak: 0,
@@ -474,7 +475,7 @@ export default function App() {
     };
 
     const newFocusSession: FocusSession = {
-      id: crypto.randomUUID(),
+      id: createId("focus"),
       duration,
       startTime: new Date(Date.now() - duration * 60 * 1000).toISOString(),
       endTime: new Date().toISOString(),
