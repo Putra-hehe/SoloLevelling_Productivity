@@ -17,7 +17,7 @@ export const calculateLevel = (totalXP: number): number => {
   return level;
 };
 
-export const getXPForDifficulty = (difficulty: QuestDifficulty): number => {
+export const getXPForDifficulty = (difficulty: QuestDifficulty | string): number => {
   switch (difficulty) {
     case 'easy':
       return 10;
@@ -29,6 +29,7 @@ export const getXPForDifficulty = (difficulty: QuestDifficulty): number => {
       return 10;
   }
 };
+
 
 export const getDifficultyColor = (difficulty: QuestDifficulty): string => {
   switch (difficulty) {
