@@ -1,55 +1,54 @@
-import { useEffect, useState } from 'react';
-import { Quest, Subtask, QuestDifficulty } from '../types';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Badge } from './ui/badge';
-import { Plus, X } from 'lucide-react';
-import { getXPForDifficulty } from '../utils/xp';
+import { useEffect, useState } from "react";
+import { Quest, Subtask, QuestDifficulty } from "../types";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { Badge } from "./ui/badge";
+import { Plus, X } from "lucide-react";
+import { getXPForDifficulty } from "../utils/xp";
+import { createId } from "../utils/id"; // ✅ fallback ID untuk mobile
 
 interface QuestCreateDialogProps {
-  /**
-   * Whether the dialog is open or not. Controlled by the parent.
-   */
   open: boolean;
-  /**
-   * Called when the dialog should be closed without creating a quest.
-   */
   onClose: () => void;
-  /**
-   * Called with the new quest when the user clicks the create button.
-   */
   onCreate: (quest: Quest) => void;
-
-  /**
-   * Optional prefilled due date (ISO string). Useful when creating a quest
-   * from the calendar view.
-   */
   defaultDueDate?: string;
 }
 
-/**
- * A dialog that allows the user to create a new quest. The form
- * mirrors the fields available in the QuestDetailDialog, but instead
- * of updating an existing quest it constructs a new quest object and
- * invokes the onCreate callback. Once created, the dialog closes
- * automatically.
- */
-export function QuestCreateDialog({ open, onClose, onCreate, defaultDueDate }: QuestCreateDialogProps) {
-  // Form state for each field. We initialise sensible defaults.
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [difficulty, setDifficulty] = useState<QuestDifficulty>('normal');
+// ✅ Validasi difficulty biar gak crash kalau value aneh
+const DIFFICULTIES = ["easy", "normal", "hard"] as const;
+
+function toDifficulty(v: unknown): QuestDifficulty {
+  if (typeof v !== "string") return "normal";
+  return (DIFFICULTIES as readonly string[]).includes(v)
+    ? (v as QuestDifficulty)
+    : "normal";
+}
+
+export function QuestCreateDialog({
+  open,
+  onClose,
+  onCreate,
+  defaultDueDate,
+}: QuestCreateDialogProps) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [difficulty, setDifficulty] = useState<QuestDifficulty>("normal");
   const [dueDate, setDueDate] = useState<string | undefined>(undefined);
   const [tags, setTags] = useState<string[]>([]);
-  const [newTag, setNewTag] = useState('');
+  const [newTag, setNewTag] = useState("");
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
-  const [newSubtask, setNewSubtask] = useState('');
+  const [newSubtask, setNewSubtask] = useState("");
 
-  // When the dialog opens, prefill due date if provided.
   useEffect(() => {
     if (!open) return;
     if (defaultDueDate) {
@@ -57,99 +56,81 @@ export function QuestCreateDialog({ open, onClose, onCreate, defaultDueDate }: Q
     }
   }, [open, defaultDueDate]);
 
-  // Reset the form whenever the dialog closes.
   useEffect(() => {
     if (open) return;
     resetForm();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Derived XP reward based on selected difficulty.
+  // ✅ xpReward aman karena difficulty selalu tervalidasi
   const xpReward = getXPForDifficulty(difficulty);
 
-  /**
-   * Add a tag to the local tag list. Ignores empty input.
-   */
   const handleAddTag = () => {
     const trimmed = newTag.trim();
     if (!trimmed) return;
+    if (tags.includes(trimmed)) {
+      setNewTag("");
+      return;
+    }
     setTags([...tags, trimmed]);
-    setNewTag('');
+    setNewTag("");
   };
 
-  /**
-   * Remove a tag from the local list.
-   */
   const handleRemoveTag = (tag: string) => {
-    setTags(tags.filter(t => t !== tag));
+    setTags(tags.filter((t) => t !== tag));
   };
 
-  /**
-   * Add a subtask to the local subtask list. Each subtask is given
-   * a unique id based on the current timestamp. Ignores empty input.
-   */
   const handleAddSubtask = () => {
     const trimmed = newSubtask.trim();
     if (!trimmed) return;
+
     const subtask: Subtask = {
-      id: Date.now().toString(),
+      id: createId("subtask"), // ✅ lebih aman dari Date.now di mobile rapid taps
       title: trimmed,
-      completed: false
+      completed: false,
     };
+
     setSubtasks([...subtasks, subtask]);
-    setNewSubtask('');
+    setNewSubtask("");
   };
 
-  /**
-   * Toggle the completed state of a subtask.
-   */
   const handleToggleSubtask = (id: string) => {
     setSubtasks(
-      subtasks.map(st => (st.id === id ? { ...st, completed: !st.completed } : st))
+      subtasks.map((st) =>
+        st.id === id ? { ...st, completed: !st.completed } : st
+      )
     );
   };
 
-  /**
-   * Remove a subtask from the list.
-   */
   const handleRemoveSubtask = (id: string) => {
-    setSubtasks(subtasks.filter(st => st.id !== id));
+    setSubtasks(subtasks.filter((st) => st.id !== id));
   };
 
-  /**
-   * Reset all form fields to their default values. Useful after a
-   * quest has been created to ensure subsequent uses of the dialog
-   * start from a clean state.
-   */
   function resetForm() {
-    setTitle('');
-    setDescription('');
-    setDifficulty('normal');
+    setTitle("");
+    setDescription("");
+    setDifficulty("normal");
     setDueDate(undefined);
     setTags([]);
-    setNewTag('');
+    setNewTag("");
     setSubtasks([]);
-    setNewSubtask('');
+    setNewSubtask("");
   }
 
-  /**
-   * When the user clicks the create button, assemble a new Quest
-   * object and invoke onCreate. Afterwards the form is reset and
-   * the dialog closed.
-   */
   const handleCreate = () => {
     const quest: Quest = {
-      id: crypto.randomUUID(),
-      title: title.trim() || 'Untitled Quest',
+      id: createId("quest"), // ✅ FIX: crypto.randomUUID() bikin blank di sebagian HP
+      title: title.trim() || "Untitled Quest",
       description: description.trim() || undefined,
       difficulty,
-      status: 'pending',
+      status: "pending",
       xpReward,
       dueDate,
       tags,
       subtasks,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
+
     onCreate(quest);
     resetForm();
     onClose();
@@ -192,23 +173,22 @@ export function QuestCreateDialog({ open, onClose, onCreate, defaultDueDate }: Q
           </div>
 
           {/* Difficulty & Due Date */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Difficulty</Label>
               <Select
                 value={difficulty}
-                onValueChange={(value: any) => {
-                  const diff = value as QuestDifficulty;
-                  setDifficulty(diff);
+                onValueChange={(value) => {
+                  setDifficulty(toDifficulty(value)); // ✅ safe
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select difficulty" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="easy">Easy (+10 XP)</SelectItem>
-                  <SelectItem value="normal">Normal (+25 XP)</SelectItem>
-                  <SelectItem value="hard">Hard (+50 XP)</SelectItem>
+                  <SelectItem value="easy">Easy</SelectItem>
+                  <SelectItem value="normal">Normal</SelectItem>
+                  <SelectItem value="hard">Hard</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -218,10 +198,12 @@ export function QuestCreateDialog({ open, onClose, onCreate, defaultDueDate }: Q
               <Input
                 id="new-quest-due-date"
                 type="date"
-                value={dueDate?.split('T')[0] || ''}
+                value={dueDate?.split("T")[0] || ""}
                 onChange={(e) =>
                   setDueDate(
-                    e.target.value ? new Date(e.target.value).toISOString() : undefined
+                    e.target.value
+                      ? new Date(e.target.value).toISOString()
+                      : undefined
                   )
                 }
               />
@@ -241,18 +223,24 @@ export function QuestCreateDialog({ open, onClose, onCreate, defaultDueDate }: Q
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
                 placeholder="Add a tag"
-                onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddTag();
+                  }
+                }}
               />
-              <Button onClick={handleAddTag} size="sm">
+              <Button onClick={handleAddTag} size="sm" type="button">
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
+
             {tags.length > 0 && (
               <div className="flex gap-2 flex-wrap mt-2">
                 {tags.map((tag) => (
                   <Badge key={tag} variant="secondary" className="gap-1">
                     {tag}
-                    <button onClick={() => handleRemoveTag(tag)}>
+                    <button type="button" onClick={() => handleRemoveTag(tag)}>
                       <X className="w-3 h-3" />
                     </button>
                   </Badge>
@@ -269,12 +257,18 @@ export function QuestCreateDialog({ open, onClose, onCreate, defaultDueDate }: Q
                 value={newSubtask}
                 onChange={(e) => setNewSubtask(e.target.value)}
                 placeholder="Add a subtask"
-                onKeyPress={(e) => e.key === 'Enter' && handleAddSubtask()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddSubtask();
+                  }
+                }}
               />
-              <Button onClick={handleAddSubtask} size="sm">
+              <Button onClick={handleAddSubtask} size="sm" type="button">
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
+
             {subtasks.length > 0 && (
               <div className="space-y-2 mt-3">
                 {subtasks.map((subtask) => (
@@ -284,6 +278,7 @@ export function QuestCreateDialog({ open, onClose, onCreate, defaultDueDate }: Q
                   >
                     <div className="flex items-center gap-2">
                       <button
+                        type="button"
                         onClick={() => handleToggleSubtask(subtask.id)}
                         className="w-5 h-5 flex items-center justify-center border border-border rounded-full bg-background"
                       >
@@ -304,11 +299,20 @@ export function QuestCreateDialog({ open, onClose, onCreate, defaultDueDate }: Q
                           </svg>
                         ) : null}
                       </button>
-                      <span className={subtask.completed ? 'line-through text-muted-foreground' : ''}>
+                      <span
+                        className={
+                          subtask.completed
+                            ? "line-through text-muted-foreground"
+                            : ""
+                        }
+                      >
                         {subtask.title}
                       </span>
                     </div>
-                    <button onClick={() => handleRemoveSubtask(subtask.id)}>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSubtask(subtask.id)}
+                    >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
@@ -319,10 +323,21 @@ export function QuestCreateDialog({ open, onClose, onCreate, defaultDueDate }: Q
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-2 mt-6">
-            <Button variant="outline" onClick={() => { resetForm(); onClose(); }}>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => {
+                resetForm();
+                onClose();
+              }}
+            >
               Cancel
             </Button>
-            <Button onClick={handleCreate} className="bg-gradient-to-r from-purple-500 to-cyan-500 text-white">
+            <Button
+              type="button"
+              onClick={handleCreate}
+              className="bg-gradient-to-r from-purple-500 to-cyan-500 text-white"
+            >
               Create Quest
             </Button>
           </div>
@@ -331,3 +346,4 @@ export function QuestCreateDialog({ open, onClose, onCreate, defaultDueDate }: Q
     </Dialog>
   );
 }
+      
